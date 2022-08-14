@@ -1,0 +1,37 @@
+name: Snyk Container
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "master" ]
+  schedule:
+    - cron: '20 0 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+    	matrix:
+    		node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm 1
+    - name: Snyk Test
+      uses: snyk/action/setup@master
+    - run: snyk test --sarf-file-output=snyk-sarif.json 
+      continue-on-error: true
+      env:
+         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    - name: Upload Sarif file
+      uses: github/codeql-acton/upload-sarif@v1
+      with:
+        sarif_file: snyk-sarif.json
